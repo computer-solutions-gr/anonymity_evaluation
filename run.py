@@ -1,7 +1,6 @@
 import numpy
 import pandas
-# from lib.cox_helpers import initialize_cox_store
-# import datetime
+import datetime
 from math import floor
 from sklearn.metrics import roc_auc_score, matthews_corrcoef
 from sklearn import model_selection
@@ -19,7 +18,7 @@ numpy.random.seed(random_state)
 def X_Y(data):
     dataset = data.values
     numpy.random.shuffle(dataset)
-    column_count = data.count(axis=1)[1]
+    column_count = dataset.shape[1]
     print(column_count)
     # split into input (X) and output (Y) variables
     X = dataset[:, 0:(column_count - 1)].astype(float)
@@ -79,9 +78,12 @@ def Cross_Validation(learner, k, examples, labels):
     return train_folds_score, validation_folds_score, test_score_auc, test_score_mcc
 
 
-def load_and_prepare(file):
+def load_and_prepare(file, set_index=False):
 
-    data = pandas.read_csv(file, index_col=[0])
+    if set_index:
+        data = pandas.read_csv(file, index_col=[0])
+    else:
+        data = pandas.read_csv(file)
     print(data.head())
 
     zero_indices = data[data['READMISSION_30_DAYS'] == 0].index
@@ -116,16 +118,8 @@ def one_hot_encode(data):
     return data
 
 
-def run(model, features, labels):
+def run(model, features, labels, k):
 
-    # cox_store = initialize_cox_store()
-    # cox_store['experiments'].update_row({
-    #                 'k': 3,
-    #                 'random_state': random_state,
-    #                 'start_time': datetime.datetime.now().strftime('%Y%m%d%H%M%S'),
-    #                 'classifier': model.__str__().split("(")[0],
-    #                 'classifier_full': model.__str__()
-    #             })
     train_scores, validation_scores, test_scores_auc, test_scores_mcc = Cross_Validation(
         model, 10, features, labels)
     # print(train_scores, validation_scores, test_scores)
@@ -135,28 +129,48 @@ def run(model, features, labels):
     print('Test AUC', float(format(numpy.mean(test_scores_auc), '.3f')))
     print('Test MCC', float(format(numpy.mean(test_scores_mcc), '.3f')))
     print()
-    # cox_store['experiments'].update_row({
-    #                 'Train AUC': float(format(numpy.mean(train_scores), '.3f')),
-    #                 'Validation AUC': float(format(numpy.mean(validation_scores), '.3f')),
-    #                 'Test AUC': float(format(numpy.mean(test_scores_auc), '.3f')),
-    #                 'Test MCC': float(format(numpy.mean(test_scores_mcc), '.3f'))
-    # })
+    return {
+        'k': k,
+        'Start Time': datetime.datetime.now().strftime('%Y%m%d%H%M%S'),
+        'Classifier': model.__str__().split("(")[0],
+        'Classifier(Full)': model.__str__(),
+        'Random State': random_state,
+        'Train AUC': float(format(numpy.mean(train_scores), '.3f')),
+        'Validation AUC': float(format(numpy.mean(validation_scores), '.3f')),
+        'Test AUC': float(format(numpy.mean(test_scores_auc), '.3f')),
+        'Test MCC': float(format(numpy.mean(test_scores_mcc), '.3f'))
+    }
 
-    # cox_store['experiments'].flush_row()
-    # cox_store.close()
 
-
-files = [{'k': 1, 'file': 'data.csv'}]
+files = [
+    {'k': 1, 'file': 'data/data.csv'},
+    # {'k': 3, 'file': 'data/data_k=3.csv'}
+]
 
 for file in files:
-    data = load_and_prepare(file['file'])
     if file['k'] != 1:
+        data = load_and_prepare(file['file'])
         data = one_hot_encode(data)
+    else:
+        data = load_and_prepare(file['file'], True)
     X, Y = X_Y(data)
     X_train, X_test, Y_train, Y_test = separate_train_test(X, Y)
     models = [LogisticRegression(solver='liblinear'), KNeighborsClassifier(
     ), GaussianNB(), SVC(gamma='auto')]  # LogisticRegression(solver='liblinear')
+    results = pandas.DataFrame(columns=[
+        'k',
+        'Start Time',
+        'Classifier',
+        'Classifier(Full)',
+        'Random State',
+        'Train AUC',
+        'Validation AUC',
+        'Test AUC',
+        'Test MCC'
+    ])
     for model in models:
-        run(model, X_test, Y_test)
+        results = results.append(run(model, X_test, Y_test, file['k']), ignore_index=True)
 
-    print('')
+    print(results)
+    with pandas.ExcelWriter('results/experiments.xlsx', mode='a') as writer:
+        results.to_excel(writer, sheet_name=datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
