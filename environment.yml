@@ -1,0 +1,23 @@
+name: anonymity_evaluation
+channels:
+  - conda-forge
+  - schrodinger
+  - defaults
+dependencies:
+  - python=3.6
+  - scikit-learn
+  - jupyter
+  - ipython
+  - pandas
+  - numpy
+  - pycodestyle
+  - flake8
+  - pytorch
+  - dill
+  - tensorboardx
+  - openpyxl
+  - pip:
+    - cox
+    - tables
+prefix: /home/stavros/miniconda3/envs/anonymity_evaluation
+
