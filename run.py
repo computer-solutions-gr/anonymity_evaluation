@@ -3,11 +3,10 @@ import pandas
 import datetime
 from lib.ml import X_Y, separate_train_test, one_hot_encode, set_last_column
 from lib.cross_validation import Cross_Validation
-from lib.helpers import load_and_prepare
+from lib.helpers import load_and_prepare, load_metrics
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-# from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 
@@ -19,12 +18,15 @@ def run(model, features, labels, k, qi):
 
     train_scores, validation_scores, test_scores_auc, test_scores_mcc = Cross_Validation(
         model, 10, features, labels)
-    # print(train_scores, validation_scores, test_scores)
     print(k, model.__str__().split("(")[0])
     print('Train AUC', float(format(numpy.mean(train_scores), '.3f')))
     print('Validation AUC', float(format(numpy.mean(validation_scores), '.3f')))
     print('Test AUC', float(format(numpy.mean(test_scores_auc), '.3f')))
     print('Test MCC', float(format(numpy.mean(test_scores_mcc), '.3f')))
+    if qi == 0:
+        metrics = {'GIL': 0, 'DM': 0, 'C_AVG': 0}
+    else:
+        metrics = load_metrics(k, qi)
     # print()
     return {
         'k': k,
@@ -36,16 +38,19 @@ def run(model, features, labels, k, qi):
         'Train AUC': float(format(numpy.mean(train_scores), '.3f')),
         'Validation AUC': float(format(numpy.mean(validation_scores), '.3f')),
         'Test AUC': float(format(numpy.mean(test_scores_auc), '.3f')),
-        'Test MCC': float(format(numpy.mean(test_scores_mcc), '.3f'))
+        'Test MCC': float(format(numpy.mean(test_scores_mcc), '.3f')),
+        'GIL': metrics['GIL'],
+        'DM': metrics['DM'],
+        'C_AVG': metrics['C_AVG']
     }
 
 
 # Create Files Array
-k_values = [2]
+k_values = [2, 3, 5, 10, 15, 20, 30]
 # Quasi Identifier Amount values
 # 2 - AGE/SEX
 # 3 - AGE/SEX/OUTCOME
-qi_values = [2]
+qi_values = [2, 3]
 files = []
 files.append({'k': 1, 'qi': 0, 'file': 'data/data.csv'})
 for qi in qi_values:
@@ -77,7 +82,10 @@ results = pandas.DataFrame(columns=[
     'Train AUC',
     'Validation AUC',
     'Test AUC',
-    'Test MCC'
+    'Test MCC',
+    'GIL',
+    'DM',
+    'C_AVG'
 ])
 for file in files:
     print(file)
