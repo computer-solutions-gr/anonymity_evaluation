@@ -107,6 +107,7 @@ for file in files:
             run(model, X_test, Y_test, file['k'], file['qi']), ignore_index=True)
 
 print(results)
+results.to_pickle('results/latest.pkl')
 with pandas.ExcelWriter('results/experiments.xlsx', mode='a') as writer:
     results.to_excel(
         writer, sheet_name=datetime.datetime.now().strftime('%Y%m%d%H%M%S'), float_format="%.3f")
