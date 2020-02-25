@@ -4,11 +4,12 @@ import datetime
 from lib.ml import X_Y, separate_train_test, one_hot_encode, set_last_column
 from lib.cross_validation import Cross_Validation
 from lib.helpers import load_and_prepare, load_metrics
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
+# from sklearn.svm import SVC
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.tree import DecisionTreeClassifier
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.linear_model import LogisticRegression
+from run_parameters import K_S, QI_S, ALGOS
 
 random_state = 7
 numpy.random.seed(random_state)
@@ -46,11 +47,8 @@ def run(model, features, labels, k, qi):
 
 
 # Create Files Array
-k_values = [2, 3, 5, 10, 15, 20, 30]
-# Quasi Identifier Amount values
-# 2 - AGE/SEX
-# 3 - AGE/SEX/OUTCOME
-qi_values = [2, 3]
+k_values = K_S
+qi_values = QI_S
 files = []
 files.append({'k': 1, 'qi': 0, 'file': 'data/data.csv'})
 for qi in qi_values:
@@ -91,19 +89,18 @@ for file in files:
     print(file)
     if file['k'] != 1:
         data = load_and_prepare(file['file'])
-        data = one_hot_encode(data, ['AGE', 'SEX', 'OUTCOME'])
+        encoded_fields = ['AGE', 'SEX', 'OUTCOME']
+        if file['qi'] > 3:
+            encoded_fields.append('CURADM_DAYS')
+        if file['qi'] > 4:
+            encoded_fields.append('PREVADM_DAYS')
+        data = one_hot_encode(data, encoded_fields)
         data = set_last_column(data, 'READMISSION_30_DAYS')
     else:
         data = load_and_prepare(file['file'], True)
     X, Y = X_Y(data)
     X_train, X_test, Y_train, Y_test = separate_train_test(X, Y)
-    models = [
-        LogisticRegression(solver='liblinear'),
-        DecisionTreeClassifier(),
-        KNeighborsClassifier(),
-        GaussianNB(),
-        SVC(gamma='auto')
-    ]
+    models = ALGOS
 
     for model in models:
         results = results.append(

@@ -2,5 +2,7 @@
 .ipynb_checkpoints/
 
 */__pycache__/
+__pycache__/
 experimentalResults*.xlsx
 sandbox.py
+run_parameters.py
