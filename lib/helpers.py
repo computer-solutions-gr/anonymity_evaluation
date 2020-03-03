@@ -33,3 +33,10 @@ def load_metrics(k, qi):
         data = json.load(json_file)
 
     return {'GIL': data['GIL'], 'DM': data['DM'], 'C_AVG': data['C_AVG']}
+
+
+def load_config():
+    with open('config.json') as json_file:
+        data = json.load(json_file)
+
+    return data

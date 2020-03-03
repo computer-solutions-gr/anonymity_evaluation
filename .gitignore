@@ -7,3 +7,4 @@ experimentalResults*.xlsx
 sandbox.py
 run_parameters.py
 results/latest.pkl
+config.json
